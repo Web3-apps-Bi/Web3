@@ -1,0 +1,1980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Binance Mobile</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- TradingView Widget API -->
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    <!-- QR Code Library for Deposit Addresses and Google Auth -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            --accent: #f0b90b;
+        }
+        /* Styling for Binance Dark Mode */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-family: 'Inter', sans-serif, system-ui;
+            background-color: #0d0e11; /* Deeper black/dark gray */
+            color: #f0f0f0;
+        }
+        .page {
+            display: none;
+            min-height: calc(100vh - 64px); /* Account for fixed footer */
+            padding-bottom: 70px; /* Space for fixed footer */
+        }
+        /* Custom scrollbar for chat */
+        #chatContent::-webkit-scrollbar {
+            width: 4px;
+        }
+        #chatContent::-webkit-scrollbar-thumb {
+            background: rgba(240, 185, 11, 0.4);
+            border-radius: 2px;
+        }
+        .text-accent { color: var(--accent); }
+        .bg-accent { background-color: var(--accent); }
+        .border-accent { border-color: var(--accent); }
+        .card { background-color: #16181b; border: 1px solid #2d3035; border-radius: 12px; }
+        .tab-active { color: var(--accent); }
+        .tab-active .icon-svg { fill: var(--accent); }    
+    </style>   
+  </head>
+<body class="bg-black text-white">
+
+    <!-- Global Loading Spinner -->
+    <div id="loading-spinner" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center hidden transition-opacity duration-300">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-accent"></div>
+            <p id="loading-text" class="mt-4 text-white text-lg font-medium">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Global Custom Modal/Message Box -->
+    <div id="modal-container" class="fixed inset-0 bg-black bg-opacity-75 z-40 hidden flex items-center justify-center p-4 transition-opacity duration-300">
+        <div id="modal-content" class="card p-6 w-full max-w-sm">
+            <h3 id="modal-title" class="text-xl font-bold mb-3">Message</h3>
+            <p id="modal-body" class="text-gray-400 mb-6"></p>
+            <button onclick="hideModal()" class="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-yellow-500 transition">OK</button>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+<!-- 🌐 Global Notification Banner (Dismiss on Click) -->
+<!-- ======================================================= -->
+<div 
+  id="notification-banner" 
+  class="hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 text-black 
+         p-3 text-center z-30 shadow-lg cursor-pointer transition-all duration-300 hover:opacity-90"
+  onclick="hideNotificationBanner()"
+>
+  <p class="text-sm font-semibold flex items-center justify-center">
+    <svg class="w-4 h-4 mr-2 text-black" fill="currentColor" viewBox="0 0 20 20">
+      <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 15h12a1 1 0 00.707-1.707L14 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 002.957-2.5H7.043A3 3 0 0010 18z"></path>
+    </svg>
+    <span id="banner-text" class="truncate">Market Update: Loading...</span>
+  </p>
+</div>
+
+    <!-- ===== 1. LANDING PAGE (Initial/Logged Out View) ===== -->
+    <div id="landingPage" class="page max-w-md mx-auto p-4 pt-12">
+        <header class="flex justify-between items-center mb-10">
+            <div class="flex items-center gap-2">
+                <img id="binance-logo" src="https://assets.coingecko.com/coins/images/825/large/binance-coin-logo.png"   alt="Binance Logo"  class="w-8 h-8 rounded-full" />
+                <span class="text-3xl font-extrabold text-white">Binance</span>
+            </div>
+            <button id="landingMoreBtn" class="p-2 rounded-full hover:bg-gray-800 transition relative">
+                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4z"/></svg>
+            </button>
+        </header>
+
+        <!-- Landing More Menu -->
+        <div id="landingMoreMenu" class="absolute right-4 top-14 mt-2 w-48 card bg-gray-800 shadow-xl rounded-lg z-20 hidden">
+            <button onclick="showPage('supportPage')" class="block w-full text-left px-4 py-3 text-sm hover:bg-gray-700 transition rounded-t-lg">Support</button>
+        </div>
+
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold mb-3">Trade Smarter. Live Better.</h1>
+            <p class="text-gray-400">Join the world's leading crypto exchange. Connect your wallet to begin.</p>
+        </div>
+
+        <div class="card p-5 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <p class="text-lg font-semibold text-gray-400">Total Balance</p>
+                <p class="text-2xl font-bold">$0.00</p>
+            </div>
+            <p class="text-sm text-gray-500 mb-6">Connect a wallet to view your real-time holdings and start trading.</p>
+
+            <button id="landingConnectWalletBtn" class="w-full py-4 bg-accent text-black font-extrabold rounded-xl text-lg transition hover:bg-yellow-500">
+                Connect Wallet
+            </button>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4">Market Overview</h2>
+        <div id="landingMarketOverview" class="space-y-3">
+            <p class="text-gray-500 text-center">Loading market data...</p>
+        </div>
+
+    </div>
+
+    <!-- ===== 2. MAIN HOMEPAGE (Logged In) ===== -->
+    <div id="home" class="page max-w-md mx-auto">
+        <!-- Header -->
+        <header class="flex items-center justify-between px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <div class="flex items-center gap-2">
+                <img  id="binance-logo"src="https://assets.coingecko.com/coins/images/825/large/binance-coin-logo.png" alt="Binance Logo"  class="w-8 h-8 rounded-full" />
+                <span class="text-xl font-bold text-white">Wallet</span>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="showPage('notificationsPage')" class="p-1 rounded-full hover:bg-gray-800 transition">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 15h12a1 1 0 00.707-1.707L14 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 002.957-2.5H7.043A3 3 0 0010 18z"/></svg>
+                </button>
+                <button onclick="toggleMoreMenu(this, 'moreMenu')" id="moreBtn" class="p-1 rounded-full hover:bg-gray-800 transition relative">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4zm0 8a2 2 0 110-4 2 2 0 010 4z"/></svg>
+                </button>
+            </div>
+        </header>
+        
+        <!-- More Menu Dropdown -->
+        <div id="moreMenu" class="absolute right-4 top-14 mt-2 w-48 card bg-gray-800 shadow-xl rounded-lg z-20 hidden">
+            <button onclick="showPage('accountDetailsPage')" class="block w-full text-left px-4 py-3 text-sm hover:bg-gray-700 transition rounded-t-lg">Connected Wallet</button>
+            <button onclick="showPage('settingsPage')" class="block w-full text-left px-4 py-3 text-sm hover:bg-gray-700 transition">Settings</button>
+            <button onclick="showPage('supportPage')" class="block w-full text-left px-4 py-3 text-sm hover:bg-gray-700 transition">Support</button>
+            <button onclick="disconnectWallet()" class="block w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-700 transition">Disconnect</button>
+            <button onclick="closeAccount()" class="block w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-gray-700 transition rounded-b-lg">Close Account</button>
+        </div>
+
+        <div class="p-4">
+            <!-- Total Balance Section -->
+            <div class="card p-5 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-md text-gray-400">Total Balance (USD)</p>
+                    <span id="account-id-display" class="text-xs text-gray-500 font-mono">ID: Loading...</span>
+                </div>
+                <h1 id="total-balance-display" class="text-4xl font-bold mb-4">$8550.78</h1>
+                
+                <div class="flex justify-between space-x-4 mt-6">
+                    <button onclick="showPage('depositCoinSelectPage')" class="flex-1 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 transition flex flex-col items-center justify-center">
+                        <svg class="w-6 h-6 text-accent mb-1" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/><path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+                        <span class="text-xs font-semibold">Deposit</span>
+                    </button>
+                    <button onclick="showPage('tradePage')" class="flex-1 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 transition flex flex-col items-center justify-center">
+                        <svg class="w-6 h-6 text-accent mb-1" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zm-7.5 4a2 2 0 110 4 2 2 0 010-4zM7.5 14h10V8.5a.5.5 0 00-.5-.5h-10a.5.5 0 00-.5.5V14z"/></svg>
+                        <span class="text-xs font-semibold">Trade</span>
+                    </button>
+                    <button onclick="showWithdrawSelection()" class="flex-1 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 transition flex flex-col items-center justify-center">
+                        <svg class="w-6 h-6 text-accent mb-1" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4h12a2 2 0 012 2v7a2 2 0 01-2 2h-4v2a2 2 0 01-2 2H8a2 2 0 01-2-2v-2H4a2 2 0 01-2-2V6a2 2 0 012-2zm4 4v7h4V8H8z"/></svg>
+                        <span class="text-xs font-semibold">Withdraw</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TradingView Chart -->
+            <h2 class="text-xl font-bold mb-3">BTC/USDT Live Price</h2>
+            <div id="tvchart" class="card p-0 h-80 mb-6 bg-gray-900 overflow-hidden">
+                <!-- TradingView Widget will be initialized here -->
+            </div>
+
+            <!-- Token Holdings Section -->
+            <h2 class="text-xl font-bold mb-3">Token Holdings</h2>
+            <div id="tokenHoldings" class="card p-4 space-y-3">
+                <div class="flex justify-between items-center text-gray-300">
+                    <p class="font-semibold">Tether USDT</p>
+                    <p class="text-lg font-bold" id="usdt-balance">8578.78 USDT</p>
+                </div>
+                <div class="flex justify-between items-center text-gray-500 text-sm">
+                    <p>Bitcoin BTC</p>
+                    <p>0.00000000 BTC</p>
+                </div>
+                <!-- More holdings will be added dynamically -->
+            </div>
+            
+            <!-- Transactions & Activities -->
+            <h2 class="text-xl font-bold mt-6 mb-3">Recent Activities</h2>
+            <div id="activitiesList" class="card p-4 space-y-4">
+                <p class="text-gray-500 text-center">No recent activities.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 3. MARKETS PAGE ===== -->
+    <div id="marketsPage" class="page max-w-md mx-auto">
+        <header class="flex items-center justify-between px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <h1 class="text-xl font-bold">Markets</h1>
+            <div class="flex space-x-3">
+                <button onclick="showPage('notificationsPage')" class="p-1 rounded-full hover:bg-gray-800 transition">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 15h12a1 1 0 00.707-1.707L14 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 002.957-2.5H7.043A3 3 0 0010 18z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="p-4">
+            <div class="mb-4">
+                <input type="text" id="marketSearch" placeholder="Search Markets (e.g., BTC, ETH)" class="w-full p-3 card bg-gray-900 border-gray-700 focus:border-accent focus:ring-accent transition" />
+            </div>
+
+            <h2 class="text-xl font-bold mb-3">Top Coins (USD)</h2>
+            <div id="marketsList" class="space-y-2">
+                <p class="text-gray-500 text-center">Loading market data...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 4. TRADE PAGE ===== -->
+    <div id="tradePage" class="page max-w-md mx-auto">
+        <header class="flex items-center justify-between px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="showPage('home')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <span id="tradeAssetTitle" class="text-xl font-bold">BTC/USDT</span>
+            <div class="flex space-x-3">
+                <button onclick="showPage('depositCoinSelectPage')" class="py-1 px-3 text-sm rounded-full bg-gray-800 hover:bg-gray-700 transition">Deposit</button>
+                <button onclick="showWithdrawSelection()" class="py-1 px-3 text-sm rounded-full bg-gray-800 hover:bg-gray-700 transition">Withdraw</button>
+            </div>
+        </header>
+        <div class="p-4">
+            <div id="tradeLiveChart" class="card p-0 h-96 mb-6 bg-gray-900 overflow-hidden">
+                <!-- TradingView Widget will be initialized here -->
+            </div>
+
+            <!-- Trading Panel -->
+            <div class="flex space-x-2 mb-4">
+                <button class="flex-1 py-2 rounded-xl bg-green-600 font-bold hover:bg-green-500 transition">Buy</button>
+                <button class="flex-1 py-2 rounded-xl bg-red-600 font-bold hover:bg-red-500 transition">Sell</button>
+            </div>
+
+            <div class="card p-4 space-y-4">
+                <h3 class="text-lg font-bold text-accent">Order Book (Simulated)</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-red-400 text-sm"><span>0.005 BTC</span><span>42,100.50</span><span>$210.50</span></div>
+                    <div class="flex justify-between text-red-400 text-sm"><span>0.012 BTC</span><span>42,098.90</span><span>$505.18</span></div>
+                    <div class="flex justify-between text-green-400 text-sm"><span>0.020 BTC</span><span>42,095.10</span><span>$841.90</span></div>
+                    <div class="flex justify-between text-green-400 text-sm"><span>0.007 BTC</span><span>42,092.00</span><span>$294.64</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 5. WALLET/PORTFOLIO PAGE (Uses same layout as Home for simplicity) ===== -->
+    <div id="walletPage" class="page max-w-md mx-auto p-4">
+        <header class="flex items-center justify-between py-3 sticky top-0 bg-black z-20 border-b border-gray-800 mb-4">
+            <h1 class="text-xl font-bold">Wallet Portfolio</h1>
+            <button onclick="showPage('notificationsPage')" class="p-1 rounded-full hover:bg-gray-800 transition">
+                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 15h12a1 1 0 00.707-1.707L14 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 002.957-2.5H7.043A3 3 0 0010 18z"/></svg>
+            </button>
+        </header>
+        <div class="card p-5 mb-6">
+            <p class="text-md text-gray-400">Total Portfolio Value</p>
+            <h1 id="portfolio-total-value" class="text-4xl font-bold mb-4">$8550.78</h1>
+            <p class="text-xs text-green-400 font-semibold">+3.5% (24h)</p>
+        </div>
+
+        <h2 class="text-xl font-bold mb-3">My Assets</h2>
+        <div id="walletHoldingsList" class="card p-4 space-y-4">
+            <!-- Asset list will be loaded here -->
+        </div>
+
+        <h2 class="text-xl font-bold mt-6 mb-3">Market Top Coins</h2>
+        <div id="walletMarketOverview" class="space-y-2">
+             <p class="text-gray-500 text-center">Loading top coins...</p>
+        </div>
+    </div>
+
+    <!-- ===== 6. NOTIFICATIONS PAGE (Binance Style + Live Updates) ===== -->
+<div id="notificationsPage" class="page max-w-md mx-auto bg-black text-white min-h-screen">
+
+    <!-- ===== Header ===== -->
+    <header class="flex items-center justify-between px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+        <!-- Back Button -->
+        <button onclick="showPage('home')" class="p-1 text-gray-400 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+
+        <!-- Title -->
+        <h1 class="text-xl font-bold text-white">Notifications</h1>
+
+        <!-- Daily Market Updates Toggle -->
+        <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-400">Daily Market Updates</span>
+            <label for="notificationToggle" class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="notificationToggle" class="sr-only peer" onchange="toggleNotifications()">
+                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer 
+                            peer-checked:after:translate-x-full peer-checked:after:border-white 
+                            after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white 
+                            after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all 
+                            peer-checked:bg-accent"></div>
+            </label>
+        </div>
+    </header>
+
+    <!-- ===== Notifications List ===== -->
+    <div id="notificationsList" class="p-4 space-y-4">
+        <p id="noNotificationsPlaceholder" class="text-gray-500 text-center">No new notifications.</p>
+    </div>
+</div>
+
+    <!-- ===== 7. SETTINGS PAGE (Partially Implemented) ===== -->
+    <div id="settingsPage" class="page max-w-md mx-auto">
+        <header class="flex items-center px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="showPage('home')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h1 class="text-xl font-bold ml-4">Settings</h1>
+        </header>
+        <div class="p-4 space-y-6">
+            <div class="card p-4 space-y-3">
+                <h2 class="text-lg font-bold">Security</h2>
+                <div onclick="showPage('googleAuthPage')" class="flex justify-between items-center py-2 cursor-pointer hover:bg-gray-800 rounded-lg p-2 transition">
+                    <p>Google Authenticator</p>
+                    <p class="text-red-400 text-sm" id="auth-status">Not Linked</p>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <p>Account ID</p>
+                    <span id="settings-account-id" class="text-sm text-gray-500 font-mono">Loading...</span>
+                </div>
+            </div>
+
+            <div class="card p-4 space-y-3">
+                <h2 class="text-lg font-bold">General</h2>
+                <div class="flex justify-between items-center py-2">
+                    <p>Currency</p>
+                    <p class="text-sm text-gray-400">USD</p>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <p>Language</p>
+                    <p class="text-sm text-gray-400">English (US)</p>
+                </div>
+            </div>
+             <button onclick="disconnectWallet()" class="w-full py-3 rounded-xl bg-gray-800 text-red-400 font-bold hover:bg-gray-700 transition">Disconnect Wallet</button>
+             <button onclick="closeAccount()" class="w-full py-3 rounded-xl bg-gray-800 text-red-500 font-bold hover:bg-gray-700 transition">Close Account</button>
+        </div>
+    </div>
+
+    <!-- ===== 8. SUPPORT PAGE (Gemini Chatbot) ===== -->
+    <div id="supportPage" class="page max-w-md mx-auto flex flex-col h-screen max-h-screen">
+        <header class="flex items-center px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="appState.isLoggedIn ? showPage('home') : showPage('landingPage')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h1 class="text-xl font-bold ml-4">Help & Support (AI)</h1>
+        </header>
+        <div class="p-4 flex-1 overflow-y-auto" id="chatContent">
+            <!-- Chat messages -->
+            <div class="flex flex-col space-y-4">
+                <div class="flex justify-start">
+                    <div class="card p-3 max-w-xs text-sm rounded-tr-xl rounded-bl-xl rounded-br-xl bg-gray-700">
+                        Hello! I am your Gemini AI assistant. I can help you with account issues, trading questions, or general crypto knowledge. How can I assist you today?
+                    </div>
+                </div>
+                <!-- Messages will be appended here -->
+            </div>
+        </div>
+        <div class="p-4 sticky bottom-0 bg-black border-t border-gray-800">
+            <div class="flex items-center space-x-3">
+                <input type="text" id="chatInput" placeholder="Ask your question..." class="flex-1 p-3 card bg-gray-900 border-gray-700 focus:border-accent focus:ring-accent transition" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()" class="p-3 rounded-full bg-accent text-black font-bold hover:bg-yellow-500 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 9. GOOGLE AUTH PAGE ===== -->
+    <div id="googleAuthPage" class="page max-w-md mx-auto">
+        <header class="flex items-center px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="showPage('settingsPage')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h1 class="text-xl font-bold ml-4">Link Google Authenticator</h1>
+        </header>
+        <div class="p-4 space-y-6">
+            <div class="card p-5 text-center space-y-4">
+                <p class="text-sm text-gray-400">Scan this QR code with your Google Authenticator app or enter the secret key manually.</p>
+                <div id="google-auth-qrcode" class="mx-auto w-40 h-40 bg-white p-2 rounded-lg"></div>
+                <p class="text-lg font-mono break-all" id="auth-secret-key">Loading Secret Key...</p>
+                <button onclick="copyToClipboard('auth-secret-key', 'Secret Key')" class="text-accent text-sm hover:underline">Copy Secret Key</button>
+            </div>
+
+            <div class="card p-5 space-y-4">
+                <p class="text-sm text-gray-400">Enter the 6-digit code from your app to verify.</p>
+                <input type="text" id="authCodeInput" placeholder="6-Digit Code" maxlength="6" class="w-full p-3 card bg-gray-900 border-gray-700 focus:border-accent focus:ring-accent transition text-center text-xl tracking-widest" />
+                <button onclick="verifyGoogleAuthCode()" class="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-yellow-500 transition">
+                    Verify Code
+                </button>
+                <p id="auth-error-message" class="text-red-400 text-center text-sm hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 10. ACCOUNT DETAILS PAGE ===== -->
+    <div id="accountDetailsPage" class="page max-w-md mx-auto">
+        <header class="flex items-center px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="showPage('home')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h1 class="text-xl font-bold ml-4">Connected Wallet Details</h1>
+        </header>
+        <div class="p-4 space-y-6">
+            <div class="card p-5 space-y-4">
+                <h2 class="text-lg font-bold">Account Info</h2>
+                <p class="flex justify-between text-gray-400"><span class="font-semibold">Account ID:</span> <span id="account-id-info" class="font-mono text-white">Loading...</span></p>
+                <p class="flex justify-between text-gray-400"><span class="font-semibold">Connected Address:</span> <span id="connected-address-info" class="font-mono text-white text-xs">0x...</span></p>
+                <p class="flex justify-between text-gray-400"><span class="font-semibold">Wallet Balance:</span> <span id="wallet-balance-info" class="text-white">$8550.78 USD</span></p>
+            </div>
+
+            <button onclick="showPage('googleAuthPage')" class="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-yellow-500 transition">
+                Secure Account (Google Auth)
+            </button>
+            <button onclick="disconnectWallet()" class="w-full py-3 rounded-xl bg-gray-800 text-red-400 font-bold hover:bg-gray-700 transition">
+                Disconnect Wallet
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 11. TRANSACTIONS/ACTIVITIES PAGE (Detailed view) ===== -->
+    <div id="transactionsPage" class="page max-w-md mx-auto">
+        <header class="flex items-center px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="showPage('home')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h1 class="text-xl font-bold ml-4">Transaction History</h1>
+        </header>
+        <div id="transactionsList" class="p-4 space-y-4">
+             <p class="text-gray-500 text-center">No transactions recorded.</p>
+        </div>
+    </div>
+
+    <!-- 12. WITHDRAWAL FLOW PAGES -->
+
+    <!-- Withdrawal Selection Modal (Footer Pop-up simulation) -->
+    <div id="withdrawSelectionModal" class="fixed inset-0 bg-black bg-opacity-75 z-40 hidden flex items-end transition-opacity duration-300" onclick="this.classList.add('hidden')">
+        <div class="card w-full rounded-t-2xl p-6 transition-transform transform translate-y-0" onclick="event.stopPropagation()">
+            <h3 class="text-xl font-bold mb-4">Select Withdrawal Method</h3>
+            <button onclick="openWithdrawDetails('on-chain')" class="w-full text-left py-4 px-3 rounded-lg bg-gray-800 hover:bg-gray-700 transition mb-3">
+                <span class="font-semibold">On-Chain Transfer</span>
+                <p class="text-xs text-gray-400">Withdraw to an external wallet address.</p>
+            </button>
+            <button onclick="openWithdrawDetails('account-id')" class="w-full text-left py-4 px-3 rounded-lg bg-gray-800 hover:bg-gray-700 transition">
+                <span class="font-semibold">User Account ID</span>
+                <p class="text-xs text-gray-400">Withdraw to another Binance Account ID.</p>
+            </button>
+        </div>
+    </div>
+
+    <!-- Withdrawal Details Page -->
+    <div id="withdrawDetailsPage" class="page max-w-md mx-auto">
+        <header class="flex items-center px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="showPage('home')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h1 class="text-xl font-bold ml-4">Withdraw USDT</h1>
+        </header>
+        <div class="p-4 space-y-6">
+            <div class="card p-5 space-y-4">
+                <label class="text-gray-400 text-sm">Withdrawal Address</label>
+                <div class="relative">
+                    <input type="text" id="withdrawAddressInput" placeholder="Enter address or ID" class="w-full p-3 card bg-gray-900 border-gray-700 focus:border-accent focus:ring-accent transition pr-28" />
+                    <button onclick="fillFromConnectedWallet()" class="absolute right-1 top-1/2 transform -translate-y-1/2 text-accent text-sm px-2 py-1 rounded hover:bg-gray-800 transition">
+                        Fill from wallet
+                    </button>
+                </div>
+
+                <label class="text-gray-400 text-sm">Select Network</label>
+                <div class="relative">
+                    <button id="networkSelectBtn" onclick="toggleNetworkSelection()" class="w-full p-3 card bg-gray-900 border-gray-700 hover:bg-gray-800 transition flex justify-between items-center">
+                        <span id="selectedNetworkDisplay">Select Network</span>
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                </div>
+
+                <label class="text-gray-400 text-sm">Amount (USDT)</label>
+                <div class="relative">
+                    <input type="number" id="withdrawAmountInput" placeholder="0.00" class="w-full p-3 card bg-gray-900 border-gray-700 focus:border-accent focus:ring-accent transition pr-16" />
+                    <button onclick="fillMaxAmount()" class="absolute right-1 top-1/2 transform -translate-y-1/2 text-accent text-sm px-2 py-1 rounded hover:bg-gray-800 transition">
+                        MAX
+                    </button>
+                </div>
+                
+                <p class="text-xs text-gray-500 flex justify-between">
+                    <span>Available Balance:</span>
+                    <span id="availableBalanceDisplay">$8550.78 USDT</span>
+                </p>
+                <p class="text-xs text-red-400" id="withdrawSuspensionMessage"></p>
+            </div>
+            
+            <div class="card p-5 space-y-2">
+                <p class="text-sm flex justify-between text-gray-400">
+                    <span>Gas Fee</span>
+                    <span>0.06834 BNB</span>
+                </p>
+                <p class="text-lg flex justify-between font-bold">
+                    <span>You will get</span>
+                    <span id="finalReceiveAmount">0.00 USDT</span>
+                </p>
+            </div>
+            
+            <button onclick="showWithdrawConfirmationPage()" class="w-full py-4 rounded-xl bg-accent text-black font-extrabold text-lg transition hover:bg-yellow-500" id="finalWithdrawBtn">
+                Withdraw
+            </button>
+        </div>
+    </div>
+    
+    <!-- Network Selection Dropdown (Hidden) -->
+    <div id="networkSelectionDropdown" class="card absolute max-w-md w-full mx-auto p-4 z-30 hidden" style="top: 250px;">
+        <h3 class="font-bold mb-3">Select Network</h3>
+        <button onclick="selectWithdrawalNetwork('Ethereum', 'ETC Ethereum network')" class="w-full text-left py-2 hover:bg-gray-800 rounded-lg px-2 transition">ETC Ethereum network</button>
+        <button onclick="selectWithdrawalNetwork('Bitcoin', 'BTC Bitcoin network')" class="w-full text-left py-2 hover:bg-gray-800 rounded-lg px-2 transition">BTC Bitcoin network</button>
+        <button onclick="selectWithdrawalNetwork('BSC', 'BNB Smart Chain BEP20 Network')" class="w-full text-left py-2 hover:bg-gray-800 rounded-lg px-2 transition">BNB Smart Chain BEP20 Network</button>
+        <button onclick="selectWithdrawalNetwork('Tron', 'Tron TRC 20 network')" class="w-full text-left py-2 hover:bg-gray-800 rounded-lg px-2 transition">Tron TRC 20 network</button>
+    </div>
+
+    <!-- Withdrawal Confirmation Page -->
+    <div id="withdrawConfirmPage" class="page max-w-md mx-auto">
+        <header class="flex items-center px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="showPage('withdrawDetailsPage')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h1 class="text-xl font-bold ml-4">Withdrawal Confirmation</h1>
+        </header>
+        <div class="p-4 space-y-6">
+            <div class="card p-5 space-y-3">
+                <p class="text-lg font-semibold">Confirm Details</p>
+                <p class="flex justify-between text-gray-400"><span class="font-semibold">Amount:</span> <span id="confirmAmount" class="text-white">0.00 USDT</span></p>
+                <p class="flex justify-between text-gray-400"><span class="font-semibold">Network:</span> <span id="confirmNetwork" class="text-white">...</span></p>
+                <p class="flex justify-between text-gray-400"><span class="font-semibold">Address:</span> <span id="confirmAddress" class="text-white break-all text-sm">...</span></p>
+            </div>
+            
+            <div class="card p-5 space-y-4">
+                <label class="text-gray-400 text-sm">Enter Validation Code</label>
+                <input type="text" id="withdrawValidationCode" placeholder="6-digit code" maxlength="6" class="w-full p-3 card bg-gray-900 border-gray-700 focus:border-accent focus:ring-accent transition text-center text-xl tracking-widest" />
+                <button onclick="handleWithdrawalConfirmation()" class="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-yellow-500 transition">
+                    Submit
+                </button>
+                <p id="withdraw-code-error" class="text-red-400 text-center text-sm hidden">Validation failed. Please try again.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Withdrawal Processing Page -->
+    <div id="withdrawalProcessingPage" class="page max-w-md mx-auto p-4 text-center">
+        <div class="mt-12">
+            <svg class="w-16 h-16 mx-auto text-yellow-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <h1 class="text-2xl font-bold mt-4 mb-2 text-yellow-400">Withdrawal Processing</h1>
+            <p class="text-gray-400">Your withdrawal is being processed. This usually takes up to 24 hours.</p>
+        </div>
+
+        <div class="card p-6 mt-8 space-y-3">
+            <p class="text-sm font-bold text-gray-400">24-Hour Countdown Remaining</p>
+            <p id="countdownTimerDisplay" class="text-5xl font-extrabold text-accent">--:--:--</p>
+            <p class="text-xs text-gray-500">Do not refresh your browser during final confirmation, but the timer will persist.</p>
+        </div>
+
+        <div class="card p-5 mt-6 space-y-3 text-left text-sm">
+            <p class="flex justify-between text-gray-400"><span class="font-semibold">Withdrawal Address:</span> <span id="procAddress" class="text-white break-all text-xs">...</span></p>
+            <p class="flex justify-between text-gray-400"><span class="font-semibold">Network:</span> <span id="procNetwork" class="text-white">...</span></p>
+            <p class="flex justify-between text-gray-400"><span class="font-semibold">Amount:</span> <span id="procAmount" class="text-white">...</span></p>
+        </div>
+
+        <button onclick="showPage('transactionsPage')" class="w-full py-3 rounded-xl bg-gray-800 text-accent font-bold hover:bg-gray-700 transition mt-6">
+            View Withdrawal Details
+        </button>
+    </div>
+
+    <!-- 13. DEPOSIT FLOW PAGES -->
+
+    <!-- Deposit Coin Selection Page -->
+    <div id="depositCoinSelectPage" class="page max-w-md mx-auto">
+        <header class="flex items-center px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="showPage('home')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h1 class="text-xl font-bold ml-4">Select Deposit Coin</h1>
+        </header>
+        <div class="p-4">
+            <div class="mb-4">
+                <input type="text" id="depositSearch" placeholder="Search coin (e.g., BTC, ETH)" class="w-full p-3 card bg-gray-900 border-gray-700 focus:border-accent focus:ring-accent transition" />
+            </div>
+            <div id="depositCoinList" class="space-y-3">
+                <!-- Coins list will be dynamically rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Deposit Network Selection Page -->
+    <div id="depositNetworkPage" class="page max-w-md mx-auto">
+        <header class="flex items-center px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="showPage('depositCoinSelectPage')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h1 class="text-xl font-bold ml-4">Select Network for <span id="depositCoinName" class="text-accent"></span></h1>
+        </header>
+        <div id="networkSelectionList" class="p-4 space-y-4">
+            <!-- Networks will be rendered here -->
+        </div>
+    </div>
+
+    <!-- Deposit Address Page -->
+    <div id="depositAddressPage" class="page max-w-md mx-auto">
+        <header class="flex items-center px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="showPage('depositNetworkPage')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h1 class="text-xl font-bold ml-4">Deposit Address (<span id="depositNetworkHeader" class="text-accent"></span>)</h1>
+        </header>
+        <div class="p-4 space-y-6">
+            <div class="card p-5 text-center space-y-4">
+                <p class="text-sm text-gray-400">Scan this QR code to deposit.</p>
+                <div id="qrcode" class="mx-auto w-40 h-40 bg-white p-2 rounded-lg"></div>
+                <p class="text-lg font-mono break-all text-white" id="depositAddressDisplay">...</p>
+                <button onclick="copyDepositAddress()" class="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-yellow-500 transition">
+                    Copy Address
+                </button>
+            </div>
+            <div class="card p-5 space-y-4">
+                <label class="text-gray-400 text-sm">Enter A Valid Deposit Amount (For Deposit)</label>
+                <input type="number" id="depositAmountInput" placeholder="0.00" class="w-full p-3 card bg-gray-900 border-gray-700 focus:border-accent focus:ring-accent transition" />
+                <button onclick="showDepositConfirmationPage()" class="w-full py-3 rounded-xl bg-gray-700 text-white font-bold hover:bg-gray-600 transition">
+                    Proceed to Confirmation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deposit Confirmation Page -->
+    <div id="depositConfirmPage" class="page max-w-md mx-auto">
+        <header class="flex items-center px-4 py-3 sticky top-0 bg-black z-20 border-b border-gray-800">
+            <button onclick="showPage('depositAddressPage')" class="p-1 text-gray-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h1 class="text-xl font-bold ml-4">Deposit Verification</h1>
+        </header>
+        <div class="p-4 space-y-6">
+            <div class="card p-5 space-y-3">
+                <p class="text-lg font-semibold">Verify Amount: <span id="depositConfirmAmount" class="text-accent"></span></p>
+                <p class="text-sm text-gray-400">Please enter a simulated 6-digit verification code to confirm the deposit.</p>
+            </div>
+
+            <div class="card p-5 space-y-4">
+                <label class="text-gray-400 text-sm">Enter Verification Code</label>
+                <input type="text" id="depositVerificationCode" placeholder="6-digit code" maxlength="6" class="w-full p-3 card bg-gray-900 border-gray-700 focus:border-accent focus:ring-accent transition text-center text-xl tracking-widest" />
+                <button onclick="handleDepositConfirmation()" class="w-full py-3 rounded-xl bg-accent text-black font-bold hover:bg-yellow-500 transition">
+                    Confirm Deposit
+                </button>
+                <p id="depositCodeError" class="text-red-400 text-center text-sm hidden">Invalid or used verification code.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== GLOBAL FOOTER (Fixed Navigation) ===== -->
+    <footer id="globalFooter" class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-black border-t border-gray-800 z-30 hidden">
+        <nav class="flex justify-around items-center h-16">
+            <button class="nav-tab flex flex-col items-center justify-center p-2 text-gray-500 hover:text-accent transition" data-page="home">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2.586l.293.293A1 1 0 009 15.414V17a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293-.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+                <span class="text-xs mt-1">Home</span>
+            </button>
+            <button class="nav-tab flex flex-col items-center justify-center p-2 text-gray-500 hover:text-accent transition" data-page="marketsPage">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM6 9a1 1 0 000 2h8a1 1 0 100-2H6zM5 13a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z"/></svg>
+                <span class="text-xs mt-1">Markets</span>
+            </button>
+            <button class="nav-tab flex flex-col items-center justify-center p-2 text-gray-500 hover:text-accent transition" data-page="tradePage">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM10 9a3 3 0 100 6 3 3 0 000-6z"/><path fill-rule="evenodd" d="M11.968 1.838A2.5 2.5 0 0115 4.5v11a2.5 2.5 0 01-3.032 2.412 1.5 1.5 0 00-1.936 0A2.5 2.5 0 015 15.5v-11a2.5 2.5 0 013.032-2.412 1.5 1.5 0 001.936 0z" clip-rule="evenodd"/></svg>
+                <span class="text-xs mt-1">Trade</span>
+            </button>
+            <button class="nav-tab flex flex-col items-center justify-center p-2 text-gray-500 hover:text-accent transition" data-page="walletPage">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4h12a2 2 0 012 2v7a2 2 0 01-2 2h-4v2a2 2 0 01-2 2H8a2 2 0 01-2-2v-2H4a2 2 0 01-2-2V6a2 2 0 012-2zm4 4v7h4V8H8z"/></svg>
+                <span class="text-xs mt-1">Wallet</span>
+            </button>
+        </nav>
+    </footer>
+
+    <script>
+        // =======================================================
+        // 0. GLOBAL CONFIG & STATE
+        // =======================================================
+        const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+        const TRADINGVIEW_SYMBOL = 'BINANCE:BTCUSDT';
+        // Note: API key is automatically provided by the Canvas environment for the fetch call
+        const API_KEY = "";
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+        const IMAGEN_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${API_KEY}`;
+
+        let appState = {
+            isLoggedIn: false,
+            userId: null,
+            connectedAddress: '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+            currentPage: 'landingPage',
+            balances: {
+                totalUSD: 8578.78,
+                tradeUSD: 8578.78,
+                usdt: 8578.78,
+            },
+            settings: {
+                notificationsOn: true,
+                authLinked: false,
+            },
+            activities: [],
+            // Timer state is stored as UNIX timestamp for persistence
+            withdrawal: {
+                countdownEnd: null, // timestamp
+                amount: 0,
+                network: '',
+                address: '',
+                status: 'None', // 'Processing', 'Successful'
+                attempts: 0,
+                suspensionEnd: null, // timestamp for 48h suspension
+            }
+        };
+
+        // Withdrawal validation codes
+        const WITHDRAW_CODES = [
+            "483921", "175064", "902718", "634285", "217509", "856430", "490127", "731694", "562803", "308417", "941256", "128374", "675820", "203519", "487960", "819432", "356701", "740528"
+        ];
+        
+        // Deposit verification codes (simulated for validation)
+        const DEPOSIT_CODES = [
+          482915, 930472, 158203, 764981, 502319, 847261, 319586, 672450, 248391, 905836,
+          731258, 629047, 580124, 417902, 896351, 264098, 152983, 309472, 741826, 589320,
+          620583, 958210, 203874, 742985, 894621, 510293, 673420, 248765, 901632, 437892
+        ];
+
+        // Supported networks per coin for deposit
+        const DEPOSIT_NETWORKS = {
+          USDT: ['Ethereum', 'Tron', 'BSC'],
+          BTC: ['Bitcoin'],
+          ETH: ['Ethereum'],
+          BNB: ['BSC'],
+          TRX: ['Tron']
+        };
+
+        // Deposit wallet addresses (Simulated)
+        const DEPOSIT_ADDRESSES = {
+          'ETHEREUM': '0xB36EDa1ffC696FFba07D4Be5cd249FE5E0118130',
+          'TRON': 'TSt7yoNwGYRbtMMfkSAHE6dPs1cd9rxcco',
+          'BSC': '0xB36EDa1ffC696FFba07D4Be5cd249FE5E0118130',
+          'BITCOIN': 'bc1qv4fffwt8ux3k33n2dms5cdvuh6suc0gtfevxzu'
+        };
+
+        let selectedDepositCoin = null;
+        let currentDeposit = {};
+        let allCoins = [];
+        let networkSelectionModalOpen = false;
+
+        // =======================================================
+        // 1. PERSISTENCE AND UTILITY FUNCTIONS
+        // =======================================================
+
+        function saveState() {
+            try {
+                localStorage.setItem('binanceCloneAppState', JSON.stringify(appState));
+                // console.log('State saved:', appState);
+                updateUIElements();
+            } catch (e) {
+                console.error('Error saving state to localStorage', e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const storedState = localStorage.getItem('binanceCloneAppState');
+                if (storedState) {
+                    const parsedState = JSON.parse(storedState);
+                    // Merge, ensuring new properties are not lost
+                    appState = { ...appState, ...parsedState, balances: { ...appState.balances, ...parsedState.balances }, withdrawal: { ...appState.withdrawal, ...parsedState.withdrawal } };
+                    // console.log('State loaded:', appState);
+                }
+            } catch (e) {
+                console.error('Error loading state from localStorage', e);
+            }
+        }
+
+        /**
+         * Simulates a time-consuming operation.
+         * @param {number} ms - time in milliseconds.
+         */
+        function waitFor(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function generateAccountId() {
+            // Generates a 10-digit random number string
+            return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+        }
+
+        function showLoading(text = 'Loading...') {
+            document.getElementById('loading-text').textContent = text;
+            document.getElementById('loading-spinner').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-spinner').classList.add('hidden');
+        }
+
+        /**
+         * Displays a custom modal message.
+         * @param {string} title
+         * @param {string} body
+         */
+        function showModal(title, body) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').textContent = body;
+            document.getElementById('modal-container').classList.remove('hidden');
+        }
+
+        function hideModal() {
+            document.getElementById('modal-container').classList.add('hidden');
+        }
+
+        function copyToClipboard(elementId, type) {
+            const textToCopy = document.getElementById(elementId).textContent;
+            try {
+                // Use execCommand for broader compatibility in iframes
+                const tempInput = document.createElement('textarea');
+                tempInput.value = textToCopy;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                showModal('Copied!', `${type} has been copied to your clipboard.`);
+            } catch (err) {
+                showModal('Copy Error', `Failed to copy ${type}. Please copy manually.`);
+            }
+        }
+
+        // Helper function for page switching and state persistence
+        function showPage(pageId, isSilent = false) {
+            // Close any open menus
+            closeMoreMenu();
+            closeLandingMoreMenu();
+
+            document.querySelectorAll('.page').forEach(page => page.style.display = 'none');
+            document.getElementById(pageId).style.display = 'block';
+
+            if (pageId === 'landingPage') {
+                document.getElementById('globalFooter').classList.add('hidden');
+            } else if (pageId !== 'withdrawSelectionModal' && pageId !== 'networkSelectionDropdown') {
+                document.getElementById('globalFooter').classList.remove('hidden');
+            }
+            
+            // Highlight the active footer button
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('tab-active', 'text-accent');
+                btn.classList.add('text-gray-500');
+                if (btn.dataset.page === pageId) {
+                    btn.classList.add('tab-active', 'text-accent');
+                    btn.classList.remove('text-gray-500');
+                }
+            });
+
+            // Update state only if not a silent load
+            if (!isSilent) {
+                appState.currentPage = pageId;
+                saveState();
+            }
+
+            // Specific page load logic
+            if (pageId === 'depositCoinSelectPage') {
+                loadDepositCoins();
+            } else if (pageId === 'marketsPage') {
+                loadMarkets();
+            } else if (pageId === 'googleAuthPage') {
+                generateGoogleAuthQr();
+            } else if (pageId === 'supportPage') {
+                // Initialize chat content
+                document.getElementById('chatContent').querySelector('div').innerHTML = `
+                <div class="flex justify-start">
+                    <div class="card p-3 max-w-xs text-sm rounded-tr-xl rounded-bl-xl rounded-br-xl bg-gray-700">
+                        Hello! I am your Gemini AI assistant. I can help you with account issues, trading questions, or general crypto knowledge. How can I assist you today?
+                    </div>
+                </div>`;
+            }
+
+        }
+
+        function updateUIElements() {
+            // Update Home/Wallet UI
+            document.getElementById('total-balance-display').textContent = `$${appState.balances.totalUSD.toFixed(2)}`;
+            document.getElementById('portfolio-total-value').textContent = `$${appState.balances.totalUSD.toFixed(2)}`;
+            document.getElementById('usdt-balance').textContent = `${appState.balances.usdt.toFixed(4)} USDT`;
+
+            // Update ID
+            const idText = `ID: ${appState.userId || 'N/A'}`;
+            document.getElementById('account-id-display').textContent = idText;
+            document.getElementById('settings-account-id').textContent = appState.userId;
+            
+            // Update Account Details Page
+            document.getElementById('account-id-info').textContent = appState.userId;
+            document.getElementById('connected-address-info').textContent = appState.connectedAddress.substring(0, 6) + '...' + appState.connectedAddress.substring(appState.connectedAddress.length - 4);
+            document.getElementById('wallet-balance-info').textContent = `$${appState.balances.totalUSD.toFixed(2)} USD`;
+            document.getElementById('auth-status').textContent = appState.settings.authLinked ? 'Linked' : 'Not Linked';
+            document.getElementById('auth-status').classList.toggle('text-green-400', appState.settings.authLinked);
+            document.getElementById('auth-status').classList.toggle('text-red-400', !appState.settings.authLinked);
+            document.getElementById('availableBalanceDisplay').textContent = `${appState.balances.totalUSD.toFixed(2)} USDT`;
+
+            // Update notifications toggle
+            document.getElementById('notificationToggle').checked = appState.settings.notificationsOn;
+            document.getElementById('notification-banner').classList.toggle('hidden', !appState.settings.notificationsOn);
+
+            // Render Activities
+            const activitiesList = document.getElementById('activitiesList');
+            const transactionsList = document.getElementById('transactionsList');
+
+            function renderActivities(container) {
+                if (appState.activities.length === 0) {
+                    container.innerHTML = `<p class="text-gray-500 text-center">No recent activities.</p>`;
+                    return;
+                }
+                container.innerHTML = appState.activities.map(activity => {
+                    const isWithdraw = activity.type.includes('Withdraw');
+                    const color = isWithdraw ? 'text-red-400' : 'text-green-400';
+                    const icon = isWithdraw ? '&#x2198;' : '&#x2197;'; // Down-right, Up-right arrow
+                    return `
+                        <div class="flex items-center justify-between p-3 card bg-gray-900 border-gray-800">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xl ${color}">${icon}</span>
+                                <div>
+                                    <p class="font-semibold">${activity.type}</p>
+                                    <p class="text-xs text-gray-500">${new Date(activity.date).toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="${color} font-bold">${activity.status}</p>
+                                <p class="text-xs text-gray-400">${activity.desc}</p>
+                                ${activity.countdown ? `<p class="text-xs text-accent mt-1">${activity.countdown}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            renderActivities(activitiesList);
+            renderActivities(transactionsList); // Use the same list for simplicity
+        }
+
+        function closeMoreMenu() {
+            document.getElementById('moreMenu')?.classList.add('hidden');
+        }
+        function closeLandingMoreMenu() {
+            document.getElementById('landingMoreMenu')?.classList.add('hidden');
+        }
+        function toggleMoreMenu(button, menuId) {
+            document.getElementById(menuId).classList.toggle('hidden');
+            event.stopPropagation();
+        }
+
+        // =======================================================
+        // 2. WALLET CONNECTION AND DISCONNECTION
+        // =======================================================
+
+        async function connectWallet() {
+            if (appState.isLoggedIn) {
+                showModal('Already Connected', 'Your wallet is already connected. Go to Home to continue.');
+                showPage('home');
+                return;
+            }
+
+            // Simulate the wallet-connector.html load and 15s connection
+            showLoading('Connecting wallet and generating Account ID...');
+            await waitFor(15000);
+
+            appState.userId = generateAccountId();
+            appState.isLoggedIn = true;
+
+            appState.activities.unshift({
+                type: 'Account Created',
+                desc: `New account ID ${appState.userId} created and wallet connected.`,
+                date: new Date().toISOString(),
+                status: 'Success'
+            });
+
+            saveState();
+            hideLoading();
+            showModal('Welcome to Binance!', `Your 10-digit Account ID: ${appState.userId} has been generated. Please save this ID to retrieve your state.`);
+            showPage('home');
+
+            // Show a temporary notification pop-up for saving the ID
+            setTimeout(() => {
+                showModal('Save Account Details', `Please securely save your Account ID: ${appState.userId}. You can view and secure your account details in the 'Connected Wallet' section.`);
+            }, 500);
+
+            // Reload data for the new session
+            fetchMarketData();
+            initializeTradingViewChart('tvchart', TRADINGVIEW_SYMBOL);
+            initializeTradingViewChart('tradeLiveChart', TRADINGVIEW_SYMBOL);
+            loadDailyMarketUpdates();
+        }
+
+        async function disconnectWallet() {
+            showLoading('Disconnecting wallet...');
+            await waitFor(2000);
+
+            appState.activities.unshift({
+                type: 'Logout',
+                desc: `Wallet disconnected.`,
+                date: new Date().toISOString(),
+                status: 'Completed'
+            });
+            appState.isLoggedIn = false;
+            appState.currentPage = 'landingPage';
+            saveState();
+            hideLoading();
+            showModal('Disconnected', 'Your wallet has been successfully disconnected.');
+            showPage('landingPage');
+        }
+
+        async function closeAccount() {
+            showLoading('Disconnecting wallet and deactivating account...');
+            await waitFor(15000);
+
+            appState.activities.unshift({
+                type: 'Account Deactivation',
+                desc: `Account ID ${appState.userId} deactivated. Future login functions for this ID are disabled.`,
+                date: new Date().toISOString(),
+                status: 'Completed'
+            });
+
+            // Note: In a real app, this would delete the user data. Here we simulate disabling by wiping the state.
+            appState = {
+                isLoggedIn: false,
+                userId: null,
+                currentPage: 'landingPage',
+                balances: { totalUSD: 0.00, tradeUSD: 0.00, usdt: 0.00 },
+                settings: { notificationsOn: false, authLinked: false },
+                withdrawal: { countdownEnd: null, suspensionEnd: null },
+                activities: [{
+                    type: 'System',
+                    desc: 'Account services disabled.',
+                    date: new Date().toISOString(),
+                    status: 'Disabled'
+                }]
+            };
+
+            saveState();
+            hideLoading();
+            showModal('Account Closed', 'Your account has been closed. You have been logged out.');
+            showPage('landingPage');
+        }
+
+        // =======================================================
+        // 3. COINGECKO API FUNCTIONS
+        // =======================================================
+
+        async function fetchMarketData() {
+            try {
+                // Fetch Top 5 Coins
+                const response = await fetch(`${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=5&page=1&sparkline=false`);
+                if (!response.ok) throw new Error('Failed to fetch market data');
+                const data = await response.json();
+
+                const landingMarketOverview = document.getElementById('landingMarketOverview');
+                const walletMarketOverview = document.getElementById('walletMarketOverview');
+
+                function renderCoinList(container, isClickable = false) {
+                    container.innerHTML = data.map(coin => {
+                        const priceChange = coin.price_change_percentage_24h || 0;
+                        const changeColor = priceChange >= 0 ? 'text-green-400' : 'text-red-400';
+                        const changeSign = priceChange >= 0 ? '+' : '';
+                        const price = coin.current_price.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                        
+                        return `
+                            <div class="flex items-center justify-between p-3 card bg-gray-900 border-gray-800 ${isClickable ? 'cursor-pointer hover:bg-gray-700' : ''}" 
+                                ${isClickable ? `onclick="selectCoinForTrade('${coin.symbol.toUpperCase()}')"` : ''}>
+                                <div class="flex items-center gap-3">
+                                    <img src="${coin.image}" class="w-6 h-6 rounded-full" onerror="this.src='https://placehold.co/24x24/16181b/ffffff?text=${coin.symbol.substring(0, 2).toUpperCase()}'"/>
+                                    <div>
+                                        <p class="font-semibold">${coin.symbol.toUpperCase()}</p>
+                                        <p class="text-xs text-gray-500">${coin.name}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold">${price}</p>
+                                    <p class="text-xs ${changeColor}">${changeSign}${priceChange.toFixed(2)}%</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                renderCoinList(landingMarketOverview, false);
+                renderCoinList(walletMarketOverview, true);
+                
+            } catch (error) {
+                console.error("Error fetching market data:", error);
+                const message = `<p class="text-red-400 text-center py-4">Failed to load market data.</p>`;
+                document.getElementById('landingMarketOverview').innerHTML = message;
+                document.getElementById('walletMarketOverview').innerHTML = message;
+            }
+        }
+
+        async function loadMarkets() {
+            const marketsList = document.getElementById('marketsList');
+            marketsList.innerHTML = `<p class="text-gray-500 text-center py-4">Loading top 50 coins...</p>`;
+            try {
+                const response = await fetch(`${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false`);
+                if (!response.ok) throw new Error('Failed to fetch markets list');
+                const data = await response.json();
+
+                marketsList.innerHTML = data.map(coin => {
+                    const priceChange = coin.price_change_percentage_24h || 0;
+                    const changeColor = priceChange >= 0 ? 'text-green-400' : 'text-red-400';
+                    const changeSign = priceChange >= 0 ? '+' : '';
+                    const price = coin.current_price.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                    
+                    return `
+                        <div class="flex items-center justify-between p-3 card bg-gray-900 border-gray-800 cursor-pointer hover:bg-gray-700 transition" 
+                            onclick="selectCoinForTrade('${coin.symbol.toUpperCase()}')">
+                            <div class="flex items-center gap-3">
+                                <img src="${coin.image}" class="w-6 h-6 rounded-full" onerror="this.src='https://placehold.co/24x24/16181b/ffffff?text=${coin.symbol.substring(0, 2).toUpperCase()}'"/>
+                                <div>
+                                    <p class="font-semibold">${coin.symbol.toUpperCase()}</p>
+                                    <p class="text-xs text-gray-500">${coin.name}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold">${price}</p>
+                                <p class="text-xs ${changeColor}">${changeSign}${priceChange.toFixed(2)}%</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error("Error loading markets:", error);
+                marketsList.innerHTML = `<p class="text-red-400 text-center py-4">Failed to load markets data.</p>`;
+            }
+        }
+        
+        function selectCoinForTrade(symbol) {
+            const tradingViewSymbol = `BINANCE:${symbol}USDT`;
+            
+            // Re-initialize chart on home and trade pages with the new symbol
+            initializeTradingViewChart('tvchart', tradingViewSymbol);
+            initializeTradingViewChart('tradeLiveChart', tradingViewSymbol);
+            
+            document.getElementById('tradeAssetTitle').textContent = `${symbol}/USDT`;
+
+            // Redirect to trade page
+            showPage('tradePage');
+            showModal('Trading Pair Selected', `Switched trading view to ${symbol}/USDT.`);
+        }  
+
+async function loadDailyMarketUpdates() {
+  if (!appState?.settings?.notificationsOn) return;
+
+  try {
+    // 1️⃣ Fetch top 10 coins by market cap
+    const coinsResponse = await fetch(`${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&price_change_percentage=24h`);
+    if (!coinsResponse.ok) throw new Error('Failed to fetch top coins');
+    const coinsData = await coinsResponse.json();
+
+    // 2️⃣ Fetch global market summary
+    const globalResponse = await fetch(`${COINGECKO_API}/global`);
+    if (!globalResponse.ok) throw new Error('Failed to fetch global market data');
+    const globalData = await globalResponse.json();
+
+    // 3️⃣ Calculate market stats
+    const totalMarketCap = (globalData.data.total_market_cap.usd / 1e12).toFixed(2); // in Trillions
+    const marketChange = globalData.data.market_cap_change_percentage_24h_usd.toFixed(2);
+
+    // 4️⃣ Determine top gainer and top loser
+    const sortedByChange = [...coinsData].sort((a, b) => b.price_change_percentage_24h - a.price_change_percentage_24h);
+    const topGainer = sortedByChange[0];
+    const topLoser = sortedByChange[sortedByChange.length - 1];
+
+    // 5️⃣ Get trending coins
+    const trendingResponse = await fetch(`${COINGECKO_API}/search/trending`);
+    const trendingData = trendingResponse.ok ? await trendingResponse.json() : { coins: [] };
+    const trendingCoins = trendingData.coins?.slice(0, 3).map(c => c.item.name).join(', ') || 'N/A';
+
+    // 6️⃣ Compose market headline
+    const marketHeadline = `
+      Market ${marketChange > 0 ? 'up' : 'down'} ${Math.abs(marketChange)}% in 24h — 
+      Total Cap: $${totalMarketCap}T — 
+      Top Gainer: ${topGainer.name} (${topGainer.symbol.toUpperCase()}) +${topGainer.price_change_percentage_24h.toFixed(2)}% — 
+      Top Loser: ${topLoser.name} (${topLoser.symbol.toUpperCase()}) ${topLoser.price_change_percentage_24h.toFixed(2)}% — 
+      Trending: ${trendingCoins}
+    `.replace(/\s+/g, ' ').trim();
+
+    // 7️⃣ Update banner
+    const bannerText = document.getElementById('banner-text');
+    if (bannerText) bannerText.textContent = `Market Update: ${marketHeadline}`;
+
+    // 8️⃣ Add to notifications list
+    const notificationsList = document.getElementById('notificationsList');
+    if (notificationsList) {
+      const now = new Date().toLocaleString();
+      const notificationHTML = `
+        <div class="card p-4 space-y-1 border border-gray-800 rounded-xl bg-gray-900/70 hover:bg-gray-800 transition-all">
+          <p class="font-bold text-accent">Market Update</p>
+          <p class="text-gray-300">${marketHeadline}</p>
+          <p class="text-xs text-gray-500">${now} (Source: CoinGecko)</p>
+        </div>
+      `;
+      notificationsList.innerHTML = notificationHTML + notificationsList.innerHTML;
+    }
+
+    // 9️⃣ Show banner temporarily
+    const banner = document.getElementById('notification-banner');
+    if (banner) {
+      banner.classList.remove('hidden');
+      setTimeout(() => banner.classList.add('hidden'), 6000);
+    }
+
+  } catch (error) {
+    console.warn("Could not load daily market updates:", error);
+  }
+}
+
+// Hide banner on click
+function hideNotificationBanner() {
+  const banner = document.getElementById('notification-banner');
+  if (banner) banner.classList.add('hidden');
+   }
+
+        
+        function toggleNotifications() {
+            appState.settings.notificationsOn = document.getElementById('notificationToggle').checked;
+            document.getElementById('notification-banner').classList.toggle('hidden', !appState.settings.notificationsOn);
+            saveState();
+            if (appState.settings.notificationsOn) {
+                showModal('Notifications ON', 'Daily market updates will be shown.');
+            } else {
+                showModal('Notifications OFF', 'Daily market updates are suspended.');
+            }
+        }
+
+        // =======================================================
+        // 4. TRADINGVIEW CHART
+        // =======================================================
+
+        /**
+         * Initializes a TradingView chart widget.
+         * @param {string} containerId - The ID of the div to contain the chart.
+         * @param {string} symbol - The trading pair symbol (e.g., 'BINANCE:BTCUSDT').
+         */
+        function initializeTradingViewChart(containerId, symbol) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // Clear previous widget
+            container.innerHTML = ''; 
+
+            if (typeof TradingView === 'undefined') {
+                container.innerHTML = `<p class="text-red-400 text-center py-10">TradingView script not loaded.</p>`;
+                return;
+            }
+
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": symbol,
+                "interval": "D",
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "toolbar_bg": "#16181b",
+                "enable_publishing": false,
+                "hide_side_toolbar": true,
+                "allow_symbol_change": true,
+                "container_id": containerId,
+                "studies": [
+                    "STD;SMA"
+                ],
+                "overrides": {
+                    "paneProperties.background": "#0d0e11",
+                    "paneProperties.vertGridProperties.color": "#2d3035",
+                    "paneProperties.horzGridProperties.color": "#2d3035",
+                    "scalesProperties.textColor": "#a1a1aa",
+                }
+            });
+        }
+
+        // =======================================================
+        // 5. WITHDRAWAL FLOW LOGIC
+        // =======================================================
+
+        function showWithdrawSelection() {
+            if (appState.withdrawal.suspensionEnd && appState.withdrawal.suspensionEnd > Date.now()) {
+                const remaining = appState.withdrawal.suspensionEnd - Date.now();
+                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                showModal('Withdrawal Suspended', `Your withdrawal function is suspended for 48 hours due to 5 failed attempts. Remaining time: ${hours} hours.`);
+                return;
+            }
+            document.getElementById('withdrawSelectionModal').classList.remove('hidden');
+        }
+
+        function openWithdrawDetails(type) {
+            document.getElementById('withdrawSelectionModal').classList.add('hidden');
+            // Reset fields
+            document.getElementById('withdrawAddressInput').value = '';
+            document.getElementById('withdrawAmountInput').value = '';
+            document.getElementById('selectedNetworkDisplay').textContent = 'Select Network';
+            document.getElementById('finalReceiveAmount').textContent = '0.00 USDT';
+            document.getElementById('withdrawAddressInput').placeholder = type === 'on-chain' ? 'Enter wallet address' : 'Enter Binance User ID';
+
+            showPage('withdrawDetailsPage');
+        }
+
+        function fillFromConnectedWallet() {
+            document.getElementById('withdrawAddressInput').value = appState.connectedAddress;
+        }
+
+        function toggleNetworkSelection() {
+            const dropdown = document.getElementById('networkSelectionDropdown');
+            dropdown.classList.toggle('hidden');
+            networkSelectionModalOpen = !networkSelectionModalOpen;
+        }
+
+        function selectWithdrawalNetwork(network, label) {
+            document.getElementById('selectedNetworkDisplay').textContent = label;
+            document.getElementById('networkSelectionDropdown').classList.add('hidden');
+            appState.withdrawal.network = network;
+            networkSelectionModalOpen = false;
+        }
+
+        function fillMaxAmount() {
+            document.getElementById('withdrawAmountInput').value = (appState.balances.totalUSD - 0.034).toFixed(2);
+            updateFinalReceiveAmount();
+        }
+
+        function updateFinalReceiveAmount() {
+            const amount = parseFloat(document.getElementById('withdrawAmountInput').value) || 0;
+            const fee = 0.034; // BNB fee is hardcoded as requested, ignoring conversion
+            document.getElementById('finalReceiveAmount').textContent = (amount - fee > 0 ? (amount - fee).toFixed(2) : '0.00') + ' USDT';
+        }
+        
+        // Listener for amount input
+        document.getElementById('withdrawAmountInput').addEventListener('input', updateFinalReceiveAmount);
+
+        function showWithdrawConfirmationPage() {
+            const address = document.getElementById('withdrawAddressInput').value;
+            const amount = parseFloat(document.getElementById('withdrawAmountInput').value);
+            const network = document.getElementById('selectedNetworkDisplay').textContent;
+            
+            if (!address || amount <= 0 || network === 'Select Network') {
+                showModal('Error', 'Please fill in a valid address, amount, and select a network.');
+                return;
+            }
+            
+            appState.withdrawal.amount = amount;
+            appState.withdrawal.address = address;
+
+            document.getElementById('confirmAmount').textContent = `${amount.toFixed(2)} USDT`;
+            document.getElementById('confirmNetwork').textContent = network;
+            document.getElementById('confirmAddress').textContent = address;
+            document.getElementById('withdrawValidationCode').value = ''; // clear code
+            document.getElementById('withdraw-code-error').classList.add('hidden');
+            showPage('withdrawConfirmPage');
+        }
+
+        async function handleWithdrawalConfirmation() {
+            const code = document.getElementById('withdrawValidationCode').value;
+            const errorMsg = document.getElementById('withdraw-code-error');
+            errorMsg.classList.add('hidden');
+
+            if (!code || code.length !== 6) {
+                errorMsg.textContent = 'Please enter a 6-digit validation code.';
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            showLoading('Validating code...');
+            await waitFor(15000);
+
+            if (WITHDRAW_CODES.includes(code)) {
+                // SUCCESS
+                appState.withdrawal.attempts = 0; // Reset attempts
+                appState.withdrawal.countdownEnd = Date.now() + (24 * 60 * 60 * 1000); // 24 hours from now
+                appState.withdrawal.status = 'Processing';
+
+                startWithdrawalCountdown();
+                
+                appState.activities.unshift({
+                    type: 'Withdrawal Request',
+                    desc: `${appState.withdrawal.amount.toFixed(2)} USDT via ${appState.withdrawal.network}`,
+                    date: new Date().toISOString(),
+                    status: 'Processing',
+                    countdown: '24:00:00'
+                });
+                saveState();
+                
+                // Set processing page details
+                document.getElementById('procAddress').textContent = appState.withdrawal.address;
+                document.getElementById('procNetwork').textContent = appState.withdrawal.network;
+                document.getElementById('procAmount').textContent = `${appState.withdrawal.amount.toFixed(2)} USDT`;
+
+                hideLoading();
+                showPage('withdrawalProcessingPage');
+
+            } else {
+                // FAILURE
+                appState.withdrawal.attempts += 1;
+                saveState();
+                hideLoading();
+                
+                if (appState.withdrawal.attempts >= 5) {
+                    // SUSPEND
+                    appState.withdrawal.suspensionEnd = Date.now() + (48 * 60 * 60 * 1000); // 48 hours
+                    appState.withdrawal.attempts = 0;
+                    saveState();
+                    showModal('Suspension', 'Withdrawal functions suspended for 48 hours due to 5 incorrect code attempts.');
+                    startSuspensionCountdown();
+                    showPage('home');
+                } else {
+                    errorMsg.textContent = `Validation failed. Please enter the correct code. Attempts left: ${5 - appState.withdrawal.attempts}`;
+                    errorMsg.classList.remove('hidden');
+                }
+            }
+        }
+
+        // =======================================================
+        // 6. PERSISTENT TIMERS (Withdrawal & Suspension)
+        // =======================================================
+        let withdrawalInterval = null;
+        let suspensionInterval = null;
+
+        function startWithdrawalCountdown() {
+            if (withdrawalInterval) clearInterval(withdrawalInterval);
+
+            withdrawalInterval = setInterval(() => {
+                const remaining = appState.withdrawal.countdownEnd - Date.now();
+                const timerDisplay = document.getElementById('countdownTimerDisplay');
+                
+                if (remaining <= 0) {
+                    clearInterval(withdrawalInterval);
+                    timerDisplay.textContent = '00:00:00';
+                    handleWithdrawalSuccess();
+                    return;
+                }
+
+                const hours = String(Math.floor(remaining / (1000 * 60 * 60))).padStart(2, '0');
+                const minutes = String(Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+                const seconds = String(Math.floor((remaining % (1000 * 60)) / 1000)).padStart(2, '0');
+                
+                const timeString = `${hours}:${minutes}:${seconds}`;
+                timerDisplay.textContent = timeString;
+
+                // Update activity list dynamically
+                const processingActivityIndex = appState.activities.findIndex(a => a.status === 'Processing' && a.type.includes('Withdrawal'));
+                if (processingActivityIndex !== -1) {
+                    appState.activities[processingActivityIndex].countdown = timeString;
+                    updateUIElements();
+                }
+            }, 1000);
+        }
+
+        function handleWithdrawalSuccess() {
+            // Deduct funds and update status
+            appState.balances.totalUSD -= appState.withdrawal.amount;
+            appState.balances.tradeUSD -= appState.withdrawal.amount;
+            appState.balances.usdt = 0.0680; // Hardcoded reduction as requested
+
+            const successMsg = `Withdrawal of ${appState.withdrawal.amount.toFixed(2)} USDT to ${appState.withdrawal.address.substring(0, 6)}... successful.`;
+            
+            // Update activities list
+            const processingActivityIndex = appState.activities.findIndex(a => a.status === 'Processing' && a.type.includes('Withdrawal'));
+            if (processingActivityIndex !== -1) {
+                appState.activities[processingActivityIndex].status = 'Successful';
+                appState.activities[processingActivityIndex].desc = successMsg;
+                delete appState.activities[processingActivityIndex].countdown;
+            }
+
+            // Clear withdrawal state
+            appState.withdrawal.countdownEnd = null;
+            appState.withdrawal.status = 'Successful';
+
+            saveState();
+            updateUIElements();
+
+            showModal('Withdrawal Successful', successMsg);
+            showPage('home'); // Redirect to home
+        }
+
+        function startSuspensionCountdown() {
+            if (suspensionInterval) clearInterval(suspensionInterval);
+            
+            const suspensionMessage = document.getElementById('withdrawSuspensionMessage');
+            
+            suspensionInterval = setInterval(() => {
+                const remaining = appState.withdrawal.suspensionEnd - Date.now();
+
+                if (remaining <= 0) {
+                    clearInterval(suspensionInterval);
+                    appState.withdrawal.suspensionEnd = null;
+                    appState.activities.unshift({
+                        type: 'System Alert',
+                        desc: 'Withdrawal suspension lifted.',
+                        date: new Date().toISOString(),
+                        status: 'Resolved'
+                    });
+                    suspensionMessage.classList.add('hidden');
+                    saveState();
+                    updateUIElements();
+                    showModal('Suspension Lifted', 'Your withdrawal function is now active.');
+                    return;
+                }
+
+                const hours = String(Math.floor(remaining / (1000 * 60 * 60))).padStart(2, '0');
+                const minutes = String(Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+                const seconds = String(Math.floor((remaining % (1000 * 60)) / 1000)).padStart(2, '0');
+                
+                const timeString = `${hours}:${minutes}:${seconds}`;
+                
+                suspensionMessage.textContent = `Suspended. Time remaining: ${timeString}`;
+                suspensionMessage.classList.remove('hidden');
+
+                // Update activity list dynamically
+                const activity = appState.activities.find(a => a.type.includes('Suspension') && a.status === 'Active');
+                if (!activity) {
+                    appState.activities.unshift({
+                        type: 'Withdrawal Suspension',
+                        desc: '48-hour suspension due to failed attempts.',
+                        date: new Date().toISOString(),
+                        status: 'Active',
+                        countdown: timeString
+                    });
+                } else {
+                    activity.countdown = timeString;
+                }
+                updateUIElements();
+            }, 1000);
+        }
+
+        // =======================================================
+        // 7. DEPOSIT LOGIC (Copied from prompt and integrated)
+        // =======================================================
+        
+        // Load deposit coins from CoinGecko Public API (A–Z)
+        async function loadDepositCoins() {
+          const depositCoinList = document.getElementById('depositCoinList');
+          if (!depositCoinList) return;
+
+          depositCoinList.innerHTML = `<p class="text-center text-gray-400 py-4">Loading coins...</p>`;
+
+          try {
+            if (allCoins.length === 0) {
+              const response = await fetch(`${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=200&page=1&sparkline=false`);
+              if (!response.ok) throw new Error('Failed to fetch deposit coins');
+              allCoins = await response.json();
+            }
+
+            allCoins.sort((a, b) => a.symbol.localeCompare(b.symbol)); // Sort A–Z
+            renderDepositCoinList(allCoins);
+          } catch (error) {
+            console.error("Error loading deposit coins:", error);
+            depositCoinList.innerHTML = `<p class="text-center text-red-500 py-4">Failed to load coins. Please try again later.</p>`;
+          }
+
+          // Attach live search
+          const searchInput = document.getElementById('depositSearch');
+          if (searchInput) {
+            searchInput.oninput = (e) => {
+              const searchTerm = e.target.value.trim().toLowerCase();
+              if (!searchTerm) {
+                renderDepositCoinList(allCoins);
+                return;
+              }
+              const filtered = allCoins.filter(
+                c =>
+                  c.name.toLowerCase().includes(searchTerm) ||
+                  c.symbol.toLowerCase().includes(searchTerm)
+              );
+              renderDepositCoinList(filtered);
+            };
+          }
+        }
+
+        // Render Deposit Coin List
+        function renderDepositCoinList(coins) {
+          const container = document.getElementById('depositCoinList');
+          if (!container) return;
+
+          if (!coins || coins.length === 0) {
+            container.innerHTML = `<p class="text-center text-gray-400 py-4">No matching coins found.</p>`;
+            return;
+          }
+
+          let html = '';
+          coins.forEach(coin => {
+            html += `
+              <div class="deposit-coin-item flex items-center justify-between p-3 card bg-gray-900 border-gray-800 hover:bg-gray-700 cursor-pointer transition"
+                   data-symbol="${coin.symbol.toUpperCase()}" 
+                   data-name="${coin.name}" 
+                   data-id="${coin.id}" 
+                   data-image="${coin.image}">
+                <div class="flex items-center gap-3">
+                  <img src="${coin.image}" class="w-8 h-8 rounded-full"
+                    onerror="this.onerror=null;this.src='https://placehold.co/32x32/1f2937/ffffff?text=${coin.symbol.substring(0,2).toUpperCase()}'" />
+                  <div>
+                    <p class="font-semibold">${coin.symbol.toUpperCase()}</p>
+                    <p class="text-xs text-gray-400">${coin.name}</p>
+                  </div>
+                </div>
+                <svg class="w-5 h-5 text-accent" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            `;
+          });
+
+          container.innerHTML = html;
+
+          // Add click handlers for each coin
+          document.querySelectorAll('.deposit-coin-item').forEach(item => {
+            item.onclick = () => {
+              const symbol = item.dataset.symbol;
+              const image = item.dataset.image;
+              selectDepositCoin(symbol, image);
+            };
+          });
+        }
+
+        // Select a Deposit Coin
+        function selectDepositCoin(symbol, image) {
+          selectedDepositCoin = { symbol, image };
+          document.getElementById('depositCoinName').textContent = symbol;
+          renderNetworkSelection(symbol);
+          showPage('depositNetworkPage');
+        }
+
+        // Render Network Selection Page
+        function renderNetworkSelection(coinSymbol) {
+          const container = document.getElementById('networkSelectionList');
+          if (!container) return;
+
+          const networks = DEPOSIT_NETWORKS[coinSymbol] || ['Ethereum'];
+          container.innerHTML = networks.map(network => `
+            <button class="network-select-btn w-full flex items-center py-4 px-5 card bg-gray-900 border-gray-700 rounded-xl hover:bg-gray-800 transition"
+                    data-network="${network}">
+              <span class="text-md font-semibold">${network}</span>
+              <svg class="w-5 h-5 ml-auto text-accent" xmlns="http://www.w3.org/2000/svg" fill="none"
+                   viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          `).join('');
+
+          // Add click handler for each network
+          document.querySelectorAll('.network-select-btn').forEach(btn => {
+            btn.onclick = () => {
+              const network = btn.dataset.network;
+              openDepositAddressPage(selectedDepositCoin.symbol, network);
+            };
+          });
+        }
+
+        // Open Deposit Address Page (with QR code)
+        function openDepositAddressPage(symbol, network) {
+          const address = DEPOSIT_ADDRESSES[network.toUpperCase()];
+          if (!address) {
+            showModal('Error', `No deposit address found for ${symbol} on ${network}.`);
+            return;
+          }
+
+          currentDeposit = { coin: symbol, network, address };
+          showPage('depositAddressPage');
+
+          document.getElementById('depositNetworkHeader').textContent = network;
+          document.getElementById('depositAddressDisplay').textContent = address;
+
+          // Generate QR code
+          const qrContainer = document.getElementById('qrcode');
+          qrContainer.innerHTML = '';
+          // Using QRCode.js
+          new QRCode(qrContainer, {
+            text: address,
+            width: 160,
+            height: 160,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+          });
+        }
+
+        // Copy Deposit Address
+        function copyDepositAddress() {
+          const address = document.getElementById('depositAddressDisplay').textContent;
+          if (!address) return;
+          copyToClipboard('depositAddressDisplay', 'Deposit Address');
+        }
+
+        // Deposit Confirmation Flow
+        function showDepositConfirmationPage() {
+          const amount = parseFloat(document.getElementById('depositAmountInput').value);
+          if (isNaN(amount) || amount <= 0) {
+            showModal('Input Error', 'Please enter a valid deposit amount.');
+            return;
+          }
+
+          currentDeposit.amount = amount;
+          document.getElementById('depositConfirmAmount').textContent = amount.toFixed(2) + ' ' + currentDeposit.coin;
+          document.getElementById('depositVerificationCode').value = '';
+          document.getElementById('depositCodeError').classList.add('hidden');
+          showPage('depositConfirmPage');
+        }
+
+        // Handle Deposit Confirmation
+        async function handleDepositConfirmation() {
+          const code = parseInt(document.getElementById('depositVerificationCode').value);
+          const errorMsg = document.getElementById('depositCodeError');
+          errorMsg.classList.add('hidden');
+          
+          if (isNaN(code) || code.toString().length !== 6) {
+            errorMsg.textContent = 'Enter your 6-digit verification code.';
+            errorMsg.classList.remove('hidden');
+            return;
+          }
+
+          showLoading('Processing deposit...');
+          await waitFor(15000);
+
+          if (!DEPOSIT_CODES.includes(code)) {
+            hideLoading();
+            errorMsg.textContent = 'Invalid or used verification code. Deposit failed.';
+            errorMsg.classList.remove('hidden');
+            return;
+          }
+
+          // SUCCESS
+          appState.balances.totalUSD += currentDeposit.amount;
+          appState.balances.tradeUSD += currentDeposit.amount;
+          // Simulate update to USDT balance if depositing USDT
+          if (currentDeposit.coin === 'USDT') {
+            appState.balances.usdt += currentDeposit.amount;
+          } else {
+            // For other coins, just add to total balance for simplicity
+          }
+
+          appState.activities.unshift({
+            type: 'Deposit',
+            desc: `Deposited ${currentDeposit.amount.toFixed(2)} ${currentDeposit.coin} via ${currentDeposit.network}.`,
+            date: new Date().toISOString(),
+            status: 'Success'
+          });
+
+          saveState();
+          hideLoading();
+          showModal('Deposit Successful', `Successfully deposited ${currentDeposit.amount.toFixed(2)} ${currentDeposit.coin}.`);
+          showPage('home');
+        }
+
+        // =======================================================
+        // 8. GEMINI AI CHATBOT
+        // =======================================================
+
+        function appendChatMessage(message, sender) {
+            const chatContent = document.getElementById('chatContent').querySelector('div');
+            const messageClass = sender === 'user' ? 'justify-end' : 'justify-start';
+            const bubbleClass = sender === 'user' ? 'bg-accent text-black rounded-tr-xl rounded-bl-xl rounded-tl-xl' : 'bg-gray-700 rounded-tr-xl rounded-br-xl rounded-bl-xl';
+
+            const newMessage = document.createElement('div');
+            newMessage.className = `flex ${messageClass}`;
+            newMessage.innerHTML = `
+                <div class="card p-3 max-w-xs text-sm ${bubbleClass}">
+                    ${message}
+                </div>
+            `;
+            chatContent.appendChild(newMessage);
+            // Scroll to the bottom
+            document.getElementById('chatContent').scrollTop = document.getElementById('chatContent').scrollHeight;
+        }
+
+        async function sendChatMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            chatInput.value = '';
+            appendChatMessage(message, 'user');
+
+            // Show a typing indicator (simple loading text)
+            const typingIndicator = document.createElement('div');
+            typingIndicator.id = 'typingIndicator';
+            typingIndicator.className = 'flex justify-start';
+            typingIndicator.innerHTML = `<div class="card p-3 max-w-xs text-sm bg-gray-700 rounded-tr-xl rounded-br-xl rounded-bl-xl animate-pulse">AI is typing...</div>`;
+            document.getElementById('chatContent').querySelector('div').appendChild(typingIndicator);
+            document.getElementById('chatContent').scrollTop = document.getElementById('chatContent').scrollHeight;
+
+            try {
+                const response = await fetchWithRetry(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: message }] }],
+                        systemInstruction: {
+                            parts: [{ text: "You are 'Binance Ai', a helpful and knowledgeable support bot. You are cheerful and assist users with account, trading, and crypto knowledge. You also provide basic advice about the 'Auto-Trading bot' and how to start trading." }]
+                        },
+                    })
+                });
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I encountered an error while processing your request.";
+
+                // Remove typing indicator
+                typingIndicator.remove();
+                
+                appendChatMessage(text, 'ai');
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                // Remove typing indicator
+                typingIndicator.remove();
+                appendChatMessage("I am sorry, the AI service is currently unavailable.", 'ai');
+            }
+        }
+        
+        // Exponential backoff retry logic for API calls
+        async function fetchWithRetry(url, options, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) return response;
+                    // Handle non-OK response before retrying
+                    const errorBody = await response.json();
+                    throw new Error(`API Error: ${response.status} - ${errorBody.error?.message || 'Unknown error'}`);
+                } catch (error) {
+                    if (i === retries - 1) throw error; // Re-throw on final attempt
+                    const delay = Math.pow(2, i) * 1000; // Exponential backoff (1s, 2s, 4s)
+                    await waitFor(delay);
+                }
+            }
+        }
+
+        // =======================================================
+        // 9. GOOGLE AUTHENTICATION (Simulated/QR Code Generation)
+        // =======================================================
+        
+        // Function to generate a random 16-character alphanumeric secret key
+        function generateSecretKey(length = 16) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; // Base32 characters
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        async function generateGoogleAuthQr() {
+            const secretKey = generateSecretKey();
+            const accountId = appState.userId;
+            const issuer = 'BinanceClone';
+            
+            // OTP Auth URI format: otpauth://totp/Issuer:Account?secret=SECRET&issuer=Issuer
+            const otpUri = `otpauth://totp/${issuer}:${accountId}?secret=${secretKey}&issuer=${issuer}`;
+
+            document.getElementById('auth-secret-key').textContent = secretKey;
+
+            const qrContainer = document.getElementById('google-auth-qrcode');
+            qrContainer.innerHTML = ''; // Clear previous QR
+            
+            // Using QRCode.js
+            new QRCode(qrContainer, {
+                text: otpUri,
+                width: 160,
+                height: 160,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // Simulate API call and success state
+            showLoading('Generating QR Code and Secret Key...');
+            await waitFor(1000); // Small wait for realism
+            hideLoading();
+        }
+
+        async function verifyGoogleAuthCode() {
+            const codeInput = document.getElementById('authCodeInput');
+            const code = codeInput.value.trim();
+            const errorMessage = document.getElementById('auth-error-message');
+            errorMessage.classList.add('hidden');
+
+            if (code.length !== 6) {
+                errorMessage.textContent = 'Code must be 6 digits.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            showLoading('Verifying code...');
+            await waitFor(15000);
+
+            // In a real application, this would verify the code against the secret key.
+            // Here, we simulate success for simplicity.
+            
+            // Simple simulation: 1/3 chance of failure
+            const isSuccess = Math.random() > 0.33; 
+
+            if (isSuccess) {
+                appState.settings.authLinked = true;
+                appState.activities.unshift({
+                    type: 'Security',
+                    desc: 'Google Authenticator linked successfully.',
+                    date: new Date().toISOString(),
+                    status: 'Success'
+                });
+                saveState();
+                hideLoading();
+                showModal('Success', 'Google Authenticator successfully linked to your account.');
+                showPage('settingsPage');
+            } else {
+                hideLoading();
+                errorMessage.textContent = 'Verification failed. Please check the time sync and try again.';
+                errorMessage.classList.remove('hidden');
+            }
+        }
+        
+        // =======================================================
+        // 10. INITIALIZATION
+        // =======================================================
+
+        window.onload = function() {
+            loadState();
+            
+            // Check for ongoing timers and resume them
+            if (appState.withdrawal.countdownEnd && appState.withdrawal.countdownEnd > Date.now()) {
+                startWithdrawalCountdown();
+            }
+            if (appState.withdrawal.suspensionEnd && appState.withdrawal.suspensionEnd > Date.now()) {
+                startSuspensionCountdown();
+            }
+
+            updateUIElements();
+
+            // Set up page navigation buttons
+            document.querySelectorAll('.nav-tab').forEach(button => {
+                button.onclick = (e) => showPage(e.currentTarget.dataset.page);
+            });
+            
+            // Landing page connect button
+            document.getElementById('landingConnectWalletBtn').onclick = connectWallet;
+
+            // Global more menu listeners
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#moreBtn')) closeMoreMenu();
+                if (!e.target.closest('#landingMoreBtn')) closeLandingMoreMenu();
+            });
+
+            // Initial chart loads (only if logged in)
+            if (appState.isLoggedIn) {
+                const initialPage = (appState.currentPage === 'landingPage' || appState.currentPage === null) ? 'home' : appState.currentPage;
+                showPage(initialPage, true); // Silent load to avoid overriding current page
+                fetchMarketData();
+                initializeTradingViewChart('tvchart', TRADINGVIEW_SYMBOL);
+                initializeTradingViewChart('tradeLiveChart', TRADINGVIEW_SYMBOL);
+                // Start daily update cycle
+                loadDailyMarketUpdates();
+                setInterval(loadDailyMarketUpdates, 12 * 60 * 60 * 1000); // Every 12 hours
+                setInterval(fetchMarketData, 60 * 1000); // Refresh top coins every 60s
+            } else {
+                showPage('landingPage', true);
+                fetchMarketData();
+            }
+
+        }
+    </script>
+</body>
+</html>
